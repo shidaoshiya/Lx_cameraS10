@@ -1,2 +1,2 @@
 # Lx_cameraS10
-RGB ROW 采集工具
+采集工具 时间间隔
