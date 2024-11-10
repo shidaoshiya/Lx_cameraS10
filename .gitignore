@@ -19,6 +19,8 @@
 # Fortran module files
 *.mod
 *.smod
+#log
+.log
 
 # Compiled Static libraries
 *.lai
@@ -27,6 +29,6 @@
 *.lib
 
 # Executables
-*.exe
+#*.exe
 *.out
 *.app
