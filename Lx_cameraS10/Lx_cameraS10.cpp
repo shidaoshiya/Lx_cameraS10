@@ -105,8 +105,8 @@ bool  Lx_cameraS10::SaveImage()
             std::string save_image_log_path = raw_file_name + "/" + "save_img.log";
             std::cout << DcSetStringValue(devList[i].handle, 4108, save_path.c_str());
             cv::imwrite(save_rgb_path,rgb_show);
-            //save_img_log_.reset(new std::fstream(save_image_log_path.c_str(), std::ios::out | std::ios::in | std::ios::app),
-               // [](std::fstream* p) { p->close(); });
+            save_img_log_.reset(new std::fstream(save_image_log_path.c_str(), std::ios::out | std::ios::in | std::ios::app),
+                [](std::fstream* p) { p->close(); });
            // *save_img_log_.get() << "name" << "\t" << "laser_temperature " << "\t""tof1_temperature " << std::endl;
 
             LxFloatValueInfo last_tmep = { 0 };
