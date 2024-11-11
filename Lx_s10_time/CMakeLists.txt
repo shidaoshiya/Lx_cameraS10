@@ -15,11 +15,20 @@ find_package(Qt${QT_VERSION_MAJOR}
 )
 qt_standard_project_setup()
 
-# 包含第三方库的头文件
-include_directories("E:/Lanxin-MRDVS-1.3.50.0710/Lanxin-MRDVS/SDK/include")
-
-# 链接第三方库文件
-link_directories("E:/Lanxin-MRDVS-1.3.50.0710/Lanxin-MRDVS/SDK/lib/win_x64")
+if (WIN32)
+    if(CMAKE_CL_64) 
+        set(PLATFORM_PREFEX win_x64)
+    else()
+        set(PLATFORM_PREFEX win_x86)
+    endif()
+	set(CAMERA_BASE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../)
+	include_directories(${CAMERA_BASE_PATH}/SDK/include)
+	link_directories(${CAMERA_BASE_PATH}/SDK/lib/${PLATFORM_PREFEX})
+elseif (UNIX)
+	include_directories(/opt/Lanxin-MRDVS/include)
+	link_directories(/opt/Lanxin-MRDVS/lib/)
+	list(APPEND LIBS ${LIBS} pthread)
+endif ()
 
 
 
