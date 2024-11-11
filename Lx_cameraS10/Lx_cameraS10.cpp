@@ -10,7 +10,7 @@ Lx_cameraS10::Lx_cameraS10(QWidget* parent)
     : QMainWindow(parent)
 {
     ui.setupUi(this);
-    this->setWindowTitle("S10²É¼¯Ô­Í¼");
+    this->setWindowTitle("S10é‡‡é›†åŸå›¾");
     index.assign(100000, 0);
     connect(ui.pushButton, &QPushButton::clicked, this, [=]() {
         emit startWork();
@@ -43,7 +43,7 @@ bool Lx_cameraS10::MkdirByPath(const char* path) {
     }
     QDir dir;
     QString qpath = QString::fromLocal8Bit(path);
-    // Èç¹ûÂ·¾¶²»´æÔÚ£¬Ôò³¢ÊÔ´´½¨
+    // å¦‚æœè·¯å¾„ä¸å­˜åœ¨ï¼Œåˆ™å°è¯•åˆ›å»º
     if (!dir.exists(qpath)) {
         if (!dir.mkpath(qpath)) {
             std::cout << "mkdir[" << path << "] failed!" << std::endl;
@@ -55,8 +55,9 @@ bool Lx_cameraS10::MkdirByPath(const char* path) {
 bool  Lx_cameraS10::SaveImage()
 {
     auto save_cnt = 0;
+    int filecount = 0;
     while (save_cnt < ui.spinBox->value())
-    {
+    {  
         std::string ssave_cnt = std::to_string(save_cnt);
         for (int i = 0; i < devnum; ++i)
         {
@@ -85,7 +86,7 @@ bool  Lx_cameraS10::SaveImage()
             }
             cv::Mat rgb_show = cv::Mat(rgb_height, rgb_width, CV_MAKETYPE(rgb_data_type, rgb_channles), rgb_data_ptr);
             if (rgb_show.empty()) {
-                QMessageBox::critical(this, "´íÎó", "µ±Ç°Ïà»úrgbÊı¾İÎª¿Õ");
+                QMessageBox::critical(this, "é”™è¯¯", "å½“å‰ç›¸æœºrgbæ•°æ®ä¸ºç©º");
             }
 
             std::string raw_file_name = "data/";
@@ -98,20 +99,28 @@ bool  Lx_cameraS10::SaveImage()
             std::string save_image_log_path = raw_file_name + "/" + "save_img.log";
             std::cout << DcSetStringValue(devList[i].handle, 4108, save_path.c_str());            
             cv::imwrite(save_rgb_path, rgb_show);
-            if (index[groupCount] == 0)
+            if (filecount < devnum)
             {
-                index[groupCount] = 1;
-                save_img_log_.reset(new std::fstream(save_image_log_path.c_str(), std::ios::out | std::ios::in | std::ios::app),
-                    [](std::fstream* p) { p->close(); });
-                *save_img_log_.get() << "name" << "\t" << "laser_temperature " << "\t""tof1_temperature " << std::endl;
+                if (index[groupCount] == 0)
+                {
+                    save_img_log_.reset(new std::fstream(save_image_log_path.c_str(), std::ios::out | std::ios::in | std::ios::app),
+                        [](std::fstream* p) { p->close(); });
+                    *save_img_log_.get() << "name" << "\t" << "laser_temperature " << "\t""tof1_temperature " << std::endl;
+                    ++filecount;
+                }
             }
-
+            else
+            {
+				index[groupCount] = 1;
+            }            
             LxFloatValueInfo last_tmep = { 0 };
             DcGetFloatValue(devList[i].handle, LX_FLOAT_DEVICE_TEMPERATURE, &last_tmep);
             LxFloatValueInfo tof1_tmep = { 0 };
-            DcGetFloatValue(devList[i].handle, 2102, &tof1_tmep); //tof1ÎÂ¶È
+            DcGetFloatValue(devList[i].handle, 2102, &tof1_tmep); //tof1æ¸©åº¦
+            save_img_log_.reset(new std::fstream(save_image_log_path.c_str(), std::ios::out | std::ios::in | std::ios::app),
+                [](std::fstream* p) { p->close(); });
             *save_img_log_.get() << std::fixed << std::setprecision(2) << save_cnt << "\t" << last_tmep.cur_value << "\t" << "\t" << tof1_tmep.cur_value << std::endl;
-
+            save_img_log_->close();
             if (devList[i].dev_type == LX_DEVICE_S10)
             {
                 auto isPixelDataAllZeros = [](const std::vector<char>& data, int start, int size) -> bool {
@@ -124,16 +133,16 @@ bool  Lx_cameraS10::SaveImage()
                     };
                 const int width = 240;
                 const int height = 180;
-                constexpr int bytesPerPixel = 32 * 2; //Ã¿¸öÏñËØ´óĞ¡
-                constexpr int splitSize = 2 * 2;  // ÏñËØ¼ä¸ô·û
-                constexpr int imageInfoSize = 4 * 20 * 68 * 2; //½áÊø·û
-                constexpr int imageDataSize = width * height * (bytesPerPixel * 2 + splitSize * 2);//Í¼ÏñÊı¾İ´óĞ¡
-                constexpr int totalDataSize = width * height * (bytesPerPixel * 2 + splitSize * 2) + imageInfoSize;//Í¼ÏñÎÄ¼ş´óĞ¡
+                constexpr int bytesPerPixel = 32 * 2; //æ¯ä¸ªåƒç´ å¤§å°
+                constexpr int splitSize = 2 * 2;  // åƒç´ é—´éš”ç¬¦
+                constexpr int imageInfoSize = 4 * 20 * 68 * 2; //ç»“æŸç¬¦
+                constexpr int imageDataSize = width * height * (bytesPerPixel * 2 + splitSize * 2);//å›¾åƒæ•°æ®å¤§å°
+                constexpr int totalDataSize = width * height * (bytesPerPixel * 2 + splitSize * 2) + imageInfoSize;//å›¾åƒæ–‡ä»¶å¤§å°
                 std::ifstream file(save_path.c_str(), std::ios::binary);
                 std::vector<char> imageData(totalDataSize);
-                file.seekg(0, std::ios::end);  // ÒÆ¶¯µ½ÎÄ¼şÄ©Î²
-                file.seekg(0, std::ios::end);  // ÒÆ¶¯µ½ÎÄ¼şÄ©Î²
-                int fsize = static_cast<int>(file.tellg());  // »ñÈ¡ÎÄ¼ş´óĞ¡
+                file.seekg(0, std::ios::end);  // ç§»åŠ¨åˆ°æ–‡ä»¶æœ«å°¾
+                file.seekg(0, std::ios::end);  // ç§»åŠ¨åˆ°æ–‡ä»¶æœ«å°¾
+                int fsize = static_cast<int>(file.tellg());  // è·å–æ–‡ä»¶å¤§å°
                 if (fsize != totalDataSize) {
                     file.close();
                     QMessageBox::critical(nullptr, "Error", "image data content size not correct");
@@ -141,11 +150,11 @@ bool  Lx_cameraS10::SaveImage()
                     return  false;
                 }
 
-                file.seekg(0, std::ios::beg);  // ÈôĞèÒªÖØĞÂ¶ÁÈ¡ÎÄ¼şÄÚÈİ£¬ÖØÖÃÎÄ¼şÖ¸Õëµ½¿ªÊ¼Î»ÖÃ
+                file.seekg(0, std::ios::beg);  // è‹¥éœ€è¦é‡æ–°è¯»å–æ–‡ä»¶å†…å®¹ï¼Œé‡ç½®æ–‡ä»¶æŒ‡é’ˆåˆ°å¼€å§‹ä½ç½®
                 file.read(imageData.data(), totalDataSize);
                 file.close();
 
-                // Ñ­»·ËùÓĞÏñËØ, ÖğÒ»¼ì²éÃ¿ÏñËØµÄÊı¾İ²¿·ÖÊÇ·ñÈ«0
+                // å¾ªç¯æ‰€æœ‰åƒç´ , é€ä¸€æ£€æŸ¥æ¯åƒç´ çš„æ•°æ®éƒ¨åˆ†æ˜¯å¦å…¨0
                 bool ret = false;
                 for (int i = 0; i < imageDataSize; i += (bytesPerPixel + splitSize)) {
                     if (isPixelDataAllZeros(imageData, i, bytesPerPixel) == false) {
@@ -172,16 +181,16 @@ bool  Lx_cameraS10::SaveImage()
                 //64bin
                 const int width = 240;
                 const int height = 180;
-                constexpr int bytesPerPixel = 64 * 2; //Ã¿¸öÏñËØ´óĞ¡
-                constexpr int splitSize = 4 * 2;  // ÏñËØ¼ä¸ô·û
-                constexpr int imageInfoSize = 4 * 20 * 68 * 2; //½áÊø·û
-                constexpr int imageDataSize = width * height * (bytesPerPixel + splitSize);//Í¼ÏñÊı¾İ´óĞ¡
-                constexpr int totalDataSize = width * height * (bytesPerPixel + splitSize) + imageInfoSize;//Í¼ÏñÎÄ¼ş´óĞ¡
+                constexpr int bytesPerPixel = 64 * 2; //æ¯ä¸ªåƒç´ å¤§å°
+                constexpr int splitSize = 4 * 2;  // åƒç´ é—´éš”ç¬¦
+                constexpr int imageInfoSize = 4 * 20 * 68 * 2; //ç»“æŸç¬¦
+                constexpr int imageDataSize = width * height * (bytesPerPixel + splitSize);//å›¾åƒæ•°æ®å¤§å°
+                constexpr int totalDataSize = width * height * (bytesPerPixel + splitSize) + imageInfoSize;//å›¾åƒæ–‡ä»¶å¤§å°
                 std::ifstream file(save_path.c_str(), std::ios::binary);
                 std::vector<char> imageData(totalDataSize);
-                file.seekg(0, std::ios::end);  // ÒÆ¶¯µ½ÎÄ¼şÄ©Î²
-                file.seekg(0, std::ios::end);  // ÒÆ¶¯µ½ÎÄ¼şÄ©Î²
-                int fsize = static_cast<int>(file.tellg());  // »ñÈ¡ÎÄ¼ş´óĞ¡
+                file.seekg(0, std::ios::end);  // ç§»åŠ¨åˆ°æ–‡ä»¶æœ«å°¾
+                file.seekg(0, std::ios::end);  // ç§»åŠ¨åˆ°æ–‡ä»¶æœ«å°¾
+                int fsize = static_cast<int>(file.tellg());  // è·å–æ–‡ä»¶å¤§å°
                 if (fsize != totalDataSize) {
                     file.close();
                     QMessageBox::critical(nullptr, "Error", "image data content size not correct");
@@ -189,11 +198,11 @@ bool  Lx_cameraS10::SaveImage()
                     return  false;
                 }
 
-                file.seekg(0, std::ios::beg);  // ÈôĞèÒªÖØĞÂ¶ÁÈ¡ÎÄ¼şÄÚÈİ£¬ÖØÖÃÎÄ¼şÖ¸Õëµ½¿ªÊ¼Î»ÖÃ
+                file.seekg(0, std::ios::beg);  // è‹¥éœ€è¦é‡æ–°è¯»å–æ–‡ä»¶å†…å®¹ï¼Œé‡ç½®æ–‡ä»¶æŒ‡é’ˆåˆ°å¼€å§‹ä½ç½®
                 file.read(imageData.data(), totalDataSize);
                 file.close();
 
-                // Ñ­»·ËùÓĞÏñËØ, ÖğÒ»¼ì²éÃ¿ÏñËØµÄÊı¾İ²¿·ÖÊÇ·ñÈ«0
+                // å¾ªç¯æ‰€æœ‰åƒç´ , é€ä¸€æ£€æŸ¥æ¯åƒç´ çš„æ•°æ®éƒ¨åˆ†æ˜¯å¦å…¨0
                 bool ret = false;
                 for (int i = 0; i < imageDataSize; i += (bytesPerPixel + splitSize)) {
                     if (isPixelDataAllZeros(imageData, i, bytesPerPixel) == false) {
