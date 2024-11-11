@@ -22,6 +22,7 @@ private:
     int devnum;
     std::vector< LxDeviceInfo> devList;
     bool MkdirByPath(const char* path);
+    bool isFileEmpty(const std::string& filename);
     inline std::string QstrTostr(const QString qstr);
     std::shared_ptr<std::fstream>  save_img_log_ = nullptr;
 

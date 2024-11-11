@@ -8,6 +8,7 @@
 #include <thread> 
 #include <chrono>
 #include <functional>
+#include <memory>
 Lx_s10_time::Lx_s10_time(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -65,6 +66,10 @@ bool Lx_s10_time::MkdirByPath(const char* path) {
     }
     return true;
 }
+bool Lx_s10_time::isFileEmpty(const std::string& filename) {
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+    return file.tellg() == 0;
+}
 bool Lx_s10_time::SaveImage()
 {
     auto save_cnt = 0;
@@ -73,6 +78,8 @@ bool Lx_s10_time::SaveImage()
     {
         if (!isStart)
         {
+            // 暂停程序5毫秒 
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
             continue;
         }
         std::this_thread::sleep_for(std::chrono::seconds(ui.spinBox->value()));
@@ -91,30 +98,22 @@ bool Lx_s10_time::SaveImage()
 
             int flag = -99;
             bool flagg = true;
-         /*   while (flagg)
-            {*/
             std::cout<<DcSetStringValue(devList[i].handle, 4108, save_path.c_str());
-        /*        if (flag != 0)
-                {
-                    continue;
-                }        
-                else
-                {
-                    flagg = false;
-                }
-
-            }*/
-            //DcSetStringValue(devList[i].handle, 4108, save_path.c_str());
-
+            std::string filename = save_image_log_path;
+           
             save_img_log_.reset(new std::fstream(save_image_log_path.c_str(), std::ios::out | std::ios::in | std::ios::app),
-                [](std::fstream* p) { p->close(); });
-            //*save_img_log_.get() << "name" << "\t" << "laser_temperature " << "\t""tof1_temperature " << std::endl;
+                [](std::fstream* p) { p->close(); });  
 
+            if (isFileEmpty(filename))
+            {
+                *save_img_log_.get() << "name" << "\t" << "laser_temperature " << "\t""tof1_temperature " << std::endl;
+            }
             LxFloatValueInfo last_tmep = { 0 };
             DcGetFloatValue(devList[i].handle, LX_FLOAT_DEVICE_TEMPERATURE, &last_tmep);
             LxFloatValueInfo tof1_tmep = { 0 };
             DcGetFloatValue(devList[i].handle, 2102, &tof1_tmep); //tof1温度
             *save_img_log_.get() << std::fixed << std::setprecision(2) << save_cnt << "\t" << last_tmep.cur_value << "\t" << "\t" << tof1_tmep.cur_value << std::endl;
+            save_img_log_->close();
 
             if (devList[i].dev_type == LX_DEVICE_S10)
             {
